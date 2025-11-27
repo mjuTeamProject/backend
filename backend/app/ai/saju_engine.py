@@ -76,26 +76,59 @@ class SajuEngine:
         return res.reshape(list(t.shape) + [nb_classes])
     
     def calculate_sky_score(self, sky1: int, sky2: int) -> float:
-        """Calculate compatibility score for heavenly stems using ML model"""
-        t0 = np.eye(10)[np.array(sky1 - 1).reshape(-1)]
-        t0 = t0.flatten()
-        t1 = np.eye(10)[np.array(sky2 - 1).reshape(-1)]
-        t1 = t1.flatten()
-        s = np.concatenate((t0, t1))
-        s = s.reshape(1, 20)
-        pred = self.sky_model.predict(s, verbose=0)
-        return float(pred[0][0])
+        """Calculate compatibility score for heavenly stems using rule-based logic"""
+        # 천간 궁합 규칙 (1-10: 갑을병정무기경신임계)
+        # 합: 갑-기(1-6), 을-경(2-7), 병-신(3-8), 정-임(4-9), 무-계(5-10) = 0.9
+        # 충: 갑-경(1-7), 을-신(2-8), 병-임(3-9), 정-계(4-10) = 0.3
+        # 기타: 0.6
+        
+        diff = abs(sky1 - sky2)
+        
+        # 합 (차이가 5)
+        if diff == 5:
+            return 0.9
+        # 충 (차이가 6 또는 4)
+        elif diff == 6 or diff == 4:
+            return 0.3
+        # 같은 천간
+        elif diff == 0:
+            return 0.7
+        # 인접
+        elif diff == 1 or diff == 9:
+            return 0.65
+        # 기타
+        else:
+            return 0.6
     
     def calculate_earth_score(self, earth1: int, earth2: int) -> float:
-        """Calculate compatibility score for earthly branches using ML model"""
-        t0 = np.eye(12)[np.array(earth1 - 1).reshape(-1)]
-        t0 = t0.flatten()
-        t1 = np.eye(12)[np.array(earth2 - 1).reshape(-1)]
-        t1 = t1.flatten()
-        s = np.concatenate((t0, t1))
-        s = s.reshape(1, 24)
-        pred = self.earth_model.predict(s, verbose=0)
-        return float(pred[0][0])
+        """Calculate compatibility score for earthly branches using rule-based logic"""
+        # 지지 궁합 규칙 (1-12: 자축인묘진사오미신유술해)
+        # 삼합: 신자진(9-1-5), 해묘미(12-4-8), 인오술(3-7-11), 사유축(6-10-2) = 0.95
+        # 육합: 자축(1-2), 인해(3-12), 묘술(4-11), 진유(5-10), 사신(6-9), 오미(7-8) = 0.85
+        # 충: 자오(1-7), 축미(2-8), 인신(3-9), 묘유(4-10), 진술(5-11), 사해(6-12) = 0.2
+        # 형: 자묘(1-4), 인사신(3-6-9), 축술미(2-11-8) = 0.4
+        # 기타: 0.6
+        
+        diff = abs(earth1 - earth2)
+        
+        # 육합 (차이가 1)
+        if diff == 1 or diff == 11:
+            return 0.85
+        # 충 (정반대, 차이가 6)
+        elif diff == 6:
+            return 0.2
+        # 삼합 (차이가 4 또는 8)
+        elif diff == 4 or diff == 8:
+            return 0.95
+        # 형 (차이가 3 또는 9)
+        elif diff == 3 or diff == 9:
+            return 0.4
+        # 같은 지지
+        elif diff == 0:
+            return 0.75
+        # 기타
+        else:
+            return 0.6
     
     def calculate_detailed_compatibility(
         self,
