@@ -38,20 +38,30 @@ class SajuEngine:
     
     def __init__(self):
         """Initialize Saju Engine with ML models"""
-        # Create simple models programmatically instead of loading from files
-        # The h5 files are too old (Keras 1.x format) and incompatible with current TensorFlow
+        # Load converted TensorFlow 2.x compatible models
+        try:
+            self.sky_model = tf.keras.models.load_model(settings.SKY_MODEL_PATH, compile=False)
+            self.sky_model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+            print(f"✓ Loaded sky model from {settings.SKY_MODEL_PATH}")
+        except Exception as e:
+            print(f"⚠ Warning: Could not load sky model: {e}")
+            # Fallback to dummy model
+            self.sky_model = tf.keras.Sequential([
+                tf.keras.layers.Dense(1, input_shape=(20,), activation='linear')
+            ])
+            self.sky_model.compile(optimizer='adam', loss='mse', metrics=['mse'])
         
-        # Sky model: Input(20) -> Dense(1)
-        self.sky_model = tf.keras.Sequential([
-            tf.keras.layers.Dense(1, input_shape=(20,), activation='linear')
-        ])
-        self.sky_model.compile(optimizer='adam', loss='mse', metrics=['mse'])
-        
-        # Earth model: Input(24) -> Dense(1) 
-        self.earth_model = tf.keras.Sequential([
-            tf.keras.layers.Dense(1, input_shape=(24,), activation='linear')
-        ])
-        self.earth_model.compile(optimizer='adam', loss='mse', metrics=['mse'])
+        try:
+            self.earth_model = tf.keras.models.load_model(settings.EARTH_MODEL_PATH, compile=False)
+            self.earth_model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+            print(f"✓ Loaded earth model from {settings.EARTH_MODEL_PATH}")
+        except Exception as e:
+            print(f"⚠ Warning: Could not load earth model: {e}")
+            # Fallback to dummy model
+            self.earth_model = tf.keras.Sequential([
+                tf.keras.layers.Dense(1, input_shape=(24,), activation='linear')
+            ])
+            self.earth_model.compile(optimizer='adam', loss='mse', metrics=['mse'])
         
         # Load calendar data - try multiple encodings
         try:
@@ -76,59 +86,89 @@ class SajuEngine:
         return res.reshape(list(t.shape) + [nb_classes])
     
     def calculate_sky_score(self, sky1: int, sky2: int) -> float:
-        """Calculate compatibility score for heavenly stems using rule-based logic"""
-        # 천간 궁합 규칙 (1-10: 갑을병정무기경신임계)
-        # 합: 갑-기(1-6), 을-경(2-7), 병-신(3-8), 정-임(4-9), 무-계(5-10) = 0.9
-        # 충: 갑-경(1-7), 을-신(2-8), 병-임(3-9), 정-계(4-10) = 0.3
-        # 기타: 0.6
-        
-        diff = abs(sky1 - sky2)
-        
-        # 합 (차이가 5)
-        if diff == 5:
-            return 0.9
-        # 충 (차이가 6 또는 4)
-        elif diff == 6 or diff == 4:
-            return 0.3
-        # 같은 천간
-        elif diff == 0:
-            return 0.7
-        # 인접
-        elif diff == 1 or diff == 9:
-            return 0.65
-        # 기타
-        else:
-            return 0.6
+        """Calculate compatibility score for heavenly stems using ML model with rule-based fallback"""
+        try:
+            # Prepare one-hot encoded input for ML model
+            sky_input = np.zeros((1, 20))
+            sky_input[0, sky1-1] = 1  # sky1 position (1-indexed to 0-indexed)
+            sky_input[0, 10 + sky2-1] = 1  # sky2 position
+            
+            # Get ML prediction
+            prediction = self.sky_model.predict(sky_input, verbose=0)[0][0]
+            
+            # Ensure prediction is in valid range [0, 1]
+            score = max(0.0, min(1.0, float(prediction)))
+            
+            # If prediction is suspiciously uniform (untrained model), use rule-based
+            if score > 0.99 or score < 0.01:
+                raise ValueError("Model appears untrained, using rule-based fallback")
+            
+            return score
+            
+        except Exception as e:
+            # Fallback to rule-based logic
+            # 천간 궁합 규칙 (1-10: 갑을병정무기경신임계)
+            diff = abs(sky1 - sky2)
+            
+            # 합 (차이가 5)
+            if diff == 5:
+                return 0.9
+            # 충 (차이가 6 또는 4)
+            elif diff == 6 or diff == 4:
+                return 0.3
+            # 같은 천간
+            elif diff == 0:
+                return 0.7
+            # 인접
+            elif diff == 1 or diff == 9:
+                return 0.65
+            # 기타
+            else:
+                return 0.6
     
     def calculate_earth_score(self, earth1: int, earth2: int) -> float:
-        """Calculate compatibility score for earthly branches using rule-based logic"""
-        # 지지 궁합 규칙 (1-12: 자축인묘진사오미신유술해)
-        # 삼합: 신자진(9-1-5), 해묘미(12-4-8), 인오술(3-7-11), 사유축(6-10-2) = 0.95
-        # 육합: 자축(1-2), 인해(3-12), 묘술(4-11), 진유(5-10), 사신(6-9), 오미(7-8) = 0.85
-        # 충: 자오(1-7), 축미(2-8), 인신(3-9), 묘유(4-10), 진술(5-11), 사해(6-12) = 0.2
-        # 형: 자묘(1-4), 인사신(3-6-9), 축술미(2-11-8) = 0.4
-        # 기타: 0.6
-        
-        diff = abs(earth1 - earth2)
-        
-        # 육합 (차이가 1)
-        if diff == 1 or diff == 11:
-            return 0.85
-        # 충 (정반대, 차이가 6)
-        elif diff == 6:
-            return 0.2
-        # 삼합 (차이가 4 또는 8)
-        elif diff == 4 or diff == 8:
-            return 0.95
-        # 형 (차이가 3 또는 9)
-        elif diff == 3 or diff == 9:
-            return 0.4
-        # 같은 지지
-        elif diff == 0:
-            return 0.75
-        # 기타
-        else:
-            return 0.6
+        """Calculate compatibility score for earthly branches using ML model with rule-based fallback"""
+        try:
+            # Prepare one-hot encoded input for ML model
+            earth_input = np.zeros((1, 24))
+            earth_input[0, earth1-1] = 1  # earth1 position (1-indexed to 0-indexed)
+            earth_input[0, 12 + earth2-1] = 1  # earth2 position
+            
+            # Get ML prediction
+            prediction = self.earth_model.predict(earth_input, verbose=0)[0][0]
+            
+            # Ensure prediction is in valid range [0, 1]
+            score = max(0.0, min(1.0, float(prediction)))
+            
+            # If prediction is suspiciously uniform (untrained model), use rule-based
+            if score > 0.99 or score < 0.01:
+                raise ValueError("Model appears untrained, using rule-based fallback")
+            
+            return score
+            
+        except Exception as e:
+            # Fallback to rule-based logic
+            # 지지 궁합 규칙 (1-12: 자축인묘진사오미신유술해)
+            diff = abs(earth1 - earth2)
+            
+            # 육합 (차이가 1)
+            if diff == 1 or diff == 11:
+                return 0.85
+            # 충 (정반대, 차이가 6)
+            elif diff == 6:
+                return 0.2
+            # 삼합 (차이가 4 또는 8)
+            elif diff == 4 or diff == 8:
+                return 0.95
+            # 형 (차이가 3 또는 9)
+            elif diff == 3 or diff == 9:
+                return 0.4
+            # 같은 지지
+            elif diff == 0:
+                return 0.75
+            # 기타
+            else:
+                return 0.6
     
     def calculate_detailed_compatibility(
         self,
