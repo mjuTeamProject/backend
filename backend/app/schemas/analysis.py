@@ -4,6 +4,25 @@ from datetime import datetime
 from app.models.analysis import AnalysisStatusEnum
 
 
+class DirectAnalysisRequest(BaseModel):
+    """DB 조회 없이 직접 분석하기 위한 요청 스키마"""
+    # 사용자 1 (본인)
+    user1_name: Optional[str] = None
+    user1_gender: int = Field(..., description="0=female, 1=male")
+    user1_birth_year: int
+    user1_birth_month: int
+    user1_birth_day: int
+    user1_birth_hour: int = 12  # 시간 모를 경우 기본값
+
+    # 사용자 2 (상대방)
+    user2_name: Optional[str] = None
+    user2_gender: int = Field(..., description="0=female, 1=male")
+    user2_birth_year: int
+    user2_birth_month: int
+    user2_birth_day: int
+    user2_birth_hour: int = 12
+
+
 class AnalysisRequestCreate(BaseModel):
     couple_id: int
 
@@ -14,7 +33,7 @@ class AnalysisRequestResponse(BaseModel):
     status: AnalysisStatusEnum
     created_at: datetime
     completed_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -29,21 +48,6 @@ class AnalysisResultResponse(BaseModel):
     interpretation: Optional[str] = None
     certificate_image_url: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
-
-
-class CompatibilityAnalysisRequest(BaseModel):
-    """Request for compatibility analysis with birth data"""
-    user1_birth_year: int = Field(..., ge=1900, le=2025)
-    user1_birth_month: int = Field(..., ge=1, le=12)
-    user1_birth_day: int = Field(..., ge=1, le=31)
-    user1_birth_hour: int = Field(..., ge=0, le=23)
-    user1_gender: int = Field(..., ge=0, le=1, description="0=female, 1=male")
-    
-    user2_birth_year: int = Field(..., ge=1900, le=2025)
-    user2_birth_month: int = Field(..., ge=1, le=12)
-    user2_birth_day: int = Field(..., ge=1, le=31)
-    user2_birth_hour: int = Field(..., ge=0, le=23)
-    user2_gender: int = Field(..., ge=0, le=1, description="0=female, 1=male")
