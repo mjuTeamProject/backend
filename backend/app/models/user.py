@@ -12,7 +12,7 @@ class GenderEnum(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=True)
@@ -21,7 +21,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     couple = relationship("Couple", foreign_keys="Couple.user1_id", back_populates="user1")
@@ -30,10 +30,13 @@ class User(Base):
     coupons = relationship("Coupon", back_populates="user", cascade="all, delete-orphan")
     share_logs = relationship("ShareLog", back_populates="user", cascade="all, delete-orphan")
 
+    # [추가됨] 유저와 랭킹 연결
+    ranking_entries = relationship("RankingEntry", back_populates="user", cascade="all, delete-orphan")
+
 
 class Profile(Base):
     __tablename__ = "profiles"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     birth_year = Column(Integer, nullable=True)
@@ -45,6 +48,6 @@ class Profile(Base):
     avatar_url = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     user = relationship("User", back_populates="profile")

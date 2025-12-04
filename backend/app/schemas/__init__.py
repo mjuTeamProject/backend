@@ -1,9 +1,9 @@
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserWithProfile, ProfileCreate, ProfileUpdate, ProfileResponse
 from app.schemas.auth import Token, TokenPayload, LoginRequest, RegisterRequest, RefreshTokenRequest
 from app.schemas.couple import CoupleCreate, CoupleUpdate, CoupleResponse, PartnerConnectRequest, PartnerDisconnectRequest
-# 여기를 수정하세요 (CompatibilityAnalysisRequest -> DirectAnalysisRequest)
 from app.schemas.analysis import AnalysisRequestCreate, AnalysisRequestResponse, AnalysisResultResponse, DirectAnalysisRequest
-from app.schemas.ranking import RankingEntryCreate, RankingEntryResponse, RankingListResponse
+# [수정됨] RankingEntryCreate 제거, RankingRegisterRequest 추가
+from app.schemas.ranking import RankingEntryResponse, RankingListResponse, RankingRegisterRequest
 
 __all__ = [
     "UserCreate",
@@ -26,8 +26,9 @@ __all__ = [
     "AnalysisRequestCreate",
     "AnalysisRequestResponse",
     "AnalysisResultResponse",
-    "DirectAnalysisRequest",  # 여기도 수정
-    "RankingEntryCreate",
+    "DirectAnalysisRequest",
+    # [수정됨] 여기도 변경
     "RankingEntryResponse",
     "RankingListResponse",
+    "RankingRegisterRequest",
 ]

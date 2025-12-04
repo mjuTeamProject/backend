@@ -6,7 +6,7 @@ from app.database import Base
 
 class Couple(Base):
     __tablename__ = "couples"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user1_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     user2_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -15,9 +15,11 @@ class Couple(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     user1 = relationship("User", foreign_keys=[user1_id], back_populates="couple")
     user2 = relationship("User", foreign_keys=[user2_id], back_populates="couple_as_partner")
     analysis_requests = relationship("AnalysisRequest", back_populates="couple", cascade="all, delete-orphan")
-    ranking_entries = relationship("RankingEntry", back_populates="couple", cascade="all, delete-orphan")
+
+    # [삭제됨] 랭킹은 이제 커플이 아닌 유저 개인 단위이므로 아래 줄 삭제
+    # ranking_entries = relationship("RankingEntry", back_populates="couple", cascade="all, delete-orphan")
