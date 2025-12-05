@@ -16,7 +16,6 @@ class UserService:
         self.couple_repo = CoupleRepository(db)
     
     async def get_user_with_profile(self, user_id: int) -> UserWithProfile:
-        """Get user with profile"""
         user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise HTTPException(
@@ -24,10 +23,8 @@ class UserService:
                 detail="User not found"
             )
         
-        # Explicitly load profile to avoid lazy loading issues
         profile = await self.profile_repo.get_by_user_id(user_id)
         
-        # Convert to dict and build response
         user_dict = {
             "id": user.id,
             "username": user.username,
@@ -52,7 +49,6 @@ class UserService:
         return UserWithProfile.model_validate(user_dict)
     
     async def update_user(self, user_id: int, data: UserUpdate) -> UserWithProfile:
-        """Update user information"""
         user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise HTTPException(
@@ -60,11 +56,9 @@ class UserService:
                 detail="User not found"
             )
         
-        # Update fields
         if data.nickname is not None:
             user.nickname = data.nickname
         if data.email is not None:
-            # Check if email is already taken by another user
             existing = await self.user_repo.get_by_email(data.email)
             if existing and existing.id != user_id:
                 raise HTTPException(
@@ -79,7 +73,6 @@ class UserService:
         return await self.get_user_with_profile(user_id)
     
     async def update_profile(self, user_id: int, data: ProfileUpdate) -> UserWithProfile:
-        """Update user profile"""
         profile = await self.profile_repo.get_by_user_id(user_id)
         if not profile:
             raise HTTPException(
@@ -93,19 +86,15 @@ class UserService:
         return await self.get_user_with_profile(user_id)
     
     async def get_partner(self, user_id: int) -> Optional[UserWithProfile]:
-        """Get user's partner"""
         couple = await self.couple_repo.get_by_user_id(user_id)
         if not couple:
             return None
         
-        # Determine partner ID
         partner_id = couple.user2_id if couple.user1_id == user_id else couple.user1_id
         
         return await self.get_user_with_profile(partner_id)
     
     async def connect_partner(self, user_id: int, partner_username: str) -> dict:
-        """Connect with a partner"""
-        # Get partner by username
         partner = await self.user_repo.get_by_username(partner_username)
         if not partner:
             raise HTTPException(
@@ -113,14 +102,12 @@ class UserService:
                 detail="Partner not found"
             )
         
-        # Check if trying to connect with self
         if partner.id == user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot connect with yourself"
             )
         
-        # Check if user already has a partner
         existing_couple = await self.couple_repo.get_by_user_id(user_id)
         if existing_couple:
             raise HTTPException(
@@ -128,7 +115,6 @@ class UserService:
                 detail="You already have a partner connection"
             )
         
-        # Check if partner already has a connection
         partner_couple = await self.couple_repo.get_by_user_id(partner.id)
         if partner_couple:
             raise HTTPException(
@@ -136,11 +122,9 @@ class UserService:
                 detail="Partner already has a connection"
             )
         
-        # Create couple
         couple = await self.couple_repo.create(user_id, partner.id)
         await self.db.commit()
         
-        # Get partner with profile
         partner_with_profile = await self.get_user_with_profile(partner.id)
         
         return {
@@ -150,7 +134,6 @@ class UserService:
         }
     
     async def disconnect_partner(self, user_id: int) -> dict:
-        """Disconnect from partner"""
         couple = await self.couple_repo.get_by_user_id(user_id)
         if not couple:
             raise HTTPException(

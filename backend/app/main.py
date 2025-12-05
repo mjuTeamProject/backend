@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_db
-# 1. ranking 모듈이 import 되어 있는지 확인
 from app.api import auth, users, couples, analysis, ranking, share
 
 @asynccontextmanager
@@ -29,13 +28,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. 라우터 등록 부분 확인
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(couples.router, prefix="/api/couples", tags=["Couples"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 
-# ★ 이 줄이 반드시 있어야 합니다! ★
 app.include_router(ranking.router, prefix="/api/ranking", tags=["Ranking"])
 
 app.include_router(share.router, prefix="/api/share", tags=["Share"])

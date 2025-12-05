@@ -2,14 +2,12 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from app.config import settings
 
-# Create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DB_ECHO,
     future=True
 )
 
-# Create async session factory
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -18,12 +16,10 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False
 )
 
-# Create base class for models
 Base = declarative_base()
 
 
 async def get_db():
-    """Dependency for getting async database session"""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -36,6 +32,5 @@ async def get_db():
 
 
 async def init_db():
-    """Initialize database tables"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

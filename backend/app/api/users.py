@@ -15,9 +15,6 @@ async def get_my_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get current user's profile
-    """
     user_service = UserService(db)
     return await user_service.get_user_with_profile(current_user.id)
 
@@ -28,12 +25,6 @@ async def update_my_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update current user's basic information
-    
-    - **nickname**: New display name
-    - **email**: New email address
-    """
     user_service = UserService(db)
     return await user_service.update_user(current_user.id, data)
 
@@ -44,16 +35,6 @@ async def update_my_detailed_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update current user's detailed profile
-    
-    - **birth_year**: Birth year
-    - **birth_month**: Birth month
-    - **birth_day**: Birth day
-    - **birth_hour**: Birth hour (0-23)
-    - **gender**: Gender (male/female)
-    - **avatar_url**: Profile picture URL
-    """
     user_service = UserService(db)
     return await user_service.update_profile(current_user.id, data)
 
@@ -63,9 +44,6 @@ async def get_my_partner(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get current user's partner information
-    """
     user_service = UserService(db)
     partner = await user_service.get_partner(current_user.id)
     if not partner:

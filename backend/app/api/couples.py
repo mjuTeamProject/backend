@@ -16,13 +16,6 @@ async def connect_with_partner(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Connect with a partner
-    
-    - **partner_username**: Username of the partner to connect with
-    
-    Both users must not have existing partner connections.
-    """
     user_service = UserService(db)
     return await user_service.connect_partner(current_user.id, data.partner_username)
 
@@ -32,10 +25,5 @@ async def disconnect_from_partner(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Disconnect from current partner
-    
-    This will deactivate the couple relationship.
-    """
     user_service = UserService(db)
     return await user_service.disconnect_partner(current_user.id)

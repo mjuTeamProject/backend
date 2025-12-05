@@ -1,7 +1,3 @@
-"""
-Compatibility Analysis Service
-Handles compatibility analysis requests and results
-"""
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 from datetime import datetime
@@ -22,12 +18,6 @@ class AnalysisService:
         self.engine = get_engine()
     
     async def create_analysis_for_couple(self, couple_id: int, user_id: int) -> dict:
-        """
-        Create compatibility analysis for a couple
-        
-        Requires both users to have complete birth information
-        """
-        # Get couple
         couple = await self.couple_repo.get_by_id(couple_id)
         if not couple:
             raise HTTPException(
@@ -35,14 +25,12 @@ class AnalysisService:
                 detail="Couple not found"
             )
         
-        # Verify user is part of the couple
         if user_id not in [couple.user1_id, couple.user2_id]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not part of this couple"
             )
         
-        # Get profiles
         profile1 = await self.profile_repo.get_by_user_id(couple.user1_id)
         profile2 = await self.profile_repo.get_by_user_id(couple.user2_id)
         
@@ -52,7 +40,6 @@ class AnalysisService:
                 detail="Both users must have profiles"
             )
         
-        # Validate birth data
         if not all([
             profile1.birth_year, profile1.birth_month, profile1.birth_day, profile1.birth_hour,
             profile2.birth_year, profile2.birth_month, profile2.birth_day, profile2.birth_hour
@@ -62,12 +49,10 @@ class AnalysisService:
                 detail="Both users must have complete birth information"
             )
         
-        # Create analysis request
         request = await self.analysis_repo.create_request(couple_id)
         request.status = AnalysisStatusEnum.PROCESSING
         
         try:
-            # Run AI analysis
             gender1 = 1 if profile1.gender == 'male' else 0
             gender2 = 1 if profile2.gender == 'male' else 0
             
@@ -84,7 +69,6 @@ class AnalysisService:
                 gender2=gender2
             )
             
-            # Save result
             result = await self.analysis_repo.create_result(
                 request_id=request.id,
                 score=analysis_result['compatibility_score'],
@@ -94,7 +78,6 @@ class AnalysisService:
                 interpretation=analysis_result['interpretation']
             )
             
-            # Update request status
             request.status = AnalysisStatusEnum.COMPLETED
             request.completed_at = datetime.utcnow()
             
@@ -117,7 +100,6 @@ class AnalysisService:
             )
     
     async def get_result_by_id(self, result_id: int, user_id: int) -> dict:
-        """Get analysis result by ID"""
         result = await self.analysis_repo.get_result_by_id(result_id)
         if not result:
             raise HTTPException(
@@ -125,7 +107,6 @@ class AnalysisService:
                 detail="Analysis result not found"
             )
         
-        # Get request and verify access
         request = await self.analysis_repo.get_request_by_id(result.request_id)
         couple = await self.couple_repo.get_by_id(request.couple_id)
         
@@ -148,7 +129,6 @@ class AnalysisService:
         }
     
     async def get_couple_history(self, couple_id: int, user_id: int) -> list:
-        """Get all analysis history for a couple"""
         couple = await self.couple_repo.get_by_id(couple_id)
         if not couple:
             raise HTTPException(

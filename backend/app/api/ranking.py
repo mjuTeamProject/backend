@@ -12,12 +12,10 @@ from app.schemas.ranking import RankingListResponse, RankingRegisterRequest
 
 router = APIRouter()
 
-# --- [GET] 일간 랭킹 조회 ---
 @router.get("/daily", response_model=RankingListResponse)
 async def get_daily_ranking(db: AsyncSession = Depends(get_db)):
     today_start = datetime.combine(datetime.now().date(), time.min)
 
-    # User 정보를 같이 가져오기 위해 options(selectinload) 사용
     query = select(RankingEntry).options(selectinload(RankingEntry.user)).where(
         RankingEntry.period == RankingPeriodEnum.DAILY,
         RankingEntry.period_start == today_start
@@ -26,12 +24,13 @@ async def get_daily_ranking(db: AsyncSession = Depends(get_db)):
     result = await db.execute(query)
     entries = result.scalars().all()
 
-    # DB 모델 -> Pydantic 스키마 변환 (nickname 매핑)
     response_list = []
     for entry in entries:
         response_list.append({
             "id": entry.id,
             "user_nickname": entry.user.nickname if entry.user else "알수없음",
+            "user1_name": entry.user1_name,
+            "user2_name": entry.user2_name,
             "period": entry.period,
             "score": entry.score,
             "rank": entry.rank,
@@ -47,50 +46,15 @@ async def get_daily_ranking(db: AsyncSession = Depends(get_db)):
         "rankings": response_list
     }
 
-# --- [GET] 주간 랭킹 (동일 로직) ---
-@router.get("/weekly", response_model=RankingListResponse)
-async def get_weekly_ranking(db: AsyncSession = Depends(get_db)):
-    query = select(RankingEntry).options(selectinload(RankingEntry.user)).where(
-        RankingEntry.period == RankingPeriodEnum.WEEKLY
-    ).order_by(desc(RankingEntry.score)).limit(100)
-
-    result = await db.execute(query)
-    entries = result.scalars().all()
-
-    response_list = []
-    for entry in entries:
-        response_list.append({
-            "id": entry.id,
-            "user_nickname": entry.user.nickname if entry.user else "알수없음",
-            "period": entry.period,
-            "score": entry.score,
-            "rank": entry.rank,
-            "intro_message": entry.intro_message,
-            "period_start": entry.period_start,
-            "period_end": entry.period_end,
-            "created_at": entry.created_at
-        })
-
-    return {
-        "period": RankingPeriodEnum.WEEKLY,
-        "total_entries": len(response_list),
-        "rankings": response_list
-    }
-
-# --- [POST] 랭킹 등록 (커플 체크 제거됨) ---
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_for_ranking(
         data: RankingRegisterRequest,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    print(f"👉 랭킹 등록 요청: User {current_user.nickname}, Score {data.score}")
-
-    # 날짜 설정
     today_start = datetime.combine(datetime.now().date(), time.min)
     today_end = datetime.combine(datetime.now().date(), time.max)
 
-    # 기존 기록 확인 (user_id 기준)
     existing_query = select(RankingEntry).where(
         RankingEntry.user_id == current_user.id,
         RankingEntry.period == RankingPeriodEnum.DAILY,
@@ -100,16 +64,18 @@ async def register_for_ranking(
     existing_entry = existing_result.scalar_one_or_none()
 
     if existing_entry:
-        print("🔄 점수 갱신")
         existing_entry.score = data.score
         existing_entry.intro_message = data.intro_message
+        existing_entry.user1_name = data.user1_name
+        existing_entry.user2_name = data.user2_name
     else:
-        print("🆕 신규 등록")
         new_entry = RankingEntry(
-            user_id=current_user.id,  # [변경] user_id 사용
+            user_id=current_user.id,
             period=RankingPeriodEnum.DAILY,
             score=data.score,
             intro_message=data.intro_message,
+            user1_name=data.user1_name,
+            user2_name=data.user2_name,
             period_start=today_start,
             period_end=today_end
         )

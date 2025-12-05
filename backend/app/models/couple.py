@@ -20,6 +20,3 @@ class Couple(Base):
     user1 = relationship("User", foreign_keys=[user1_id], back_populates="couple")
     user2 = relationship("User", foreign_keys=[user2_id], back_populates="couple_as_partner")
     analysis_requests = relationship("AnalysisRequest", back_populates="couple", cascade="all, delete-orphan")
-
-    # [삭제됨] 랭킹은 이제 커플이 아닌 유저 개인 단위이므로 아래 줄 삭제
-    # ranking_entries = relationship("RankingEntry", back_populates="couple", cascade="all, delete-orphan")

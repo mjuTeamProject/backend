@@ -30,7 +30,6 @@ class User(Base):
     coupons = relationship("Coupon", back_populates="user", cascade="all, delete-orphan")
     share_logs = relationship("ShareLog", back_populates="user", cascade="all, delete-orphan")
 
-    # [추가됨] 유저와 랭킹 연결
     ranking_entries = relationship("RankingEntry", back_populates="user", cascade="all, delete-orphan")
 
 

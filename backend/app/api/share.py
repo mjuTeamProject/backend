@@ -15,13 +15,6 @@ async def log_share(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Log SNS share activity
-    
-    - **analysis_id**: ID of the analysis result being shared
-    - **platform**: Platform name (kakao, instagram, facebook, twitter, download)
-    """
-    # TODO: Implement share service
     return {"message": "Share logged"}
 
 
@@ -31,8 +24,4 @@ async def generate_certificate_image(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Generate and return certificate image for analysis result
-    """
-    # TODO: Implement image generation
     return {"message": "Image generation service will be implemented"}

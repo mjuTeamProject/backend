@@ -4,7 +4,6 @@ from datetime import datetime
 from app.models.user import GenderEnum
 
 
-# User Schemas
 class UserBase(BaseModel):
     username: str = Field(..., min_length=4, max_length=50)
     email: Optional[EmailStr] = None
@@ -29,7 +28,6 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
-# Profile Schemas
 class ProfileBase(BaseModel):
     birth_year: Optional[int] = None
     birth_month: Optional[int] = None
@@ -57,7 +55,6 @@ class ProfileResponse(ProfileBase):
         from_attributes = True
 
 
-# Complete User with Profile
 class UserWithProfile(UserResponse):
     profile: Optional[ProfileResponse] = None
     
